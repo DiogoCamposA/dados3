@@ -75,9 +75,13 @@ def on_message(client, userdata, msg):
     global mqtt_values_daily
     mqtt_data = get_messages()
 
-    mqtt_data_1 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else None
-    mqtt_data_2 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else None
-    mqtt_data_3 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else None
+    mqtt_data11 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else None
+    mqtt_data22 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else None
+    mqtt_data33 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else None
+
+    mqtt_data_1 = float(mqtt_data11)
+    mqtt_data_2 = float(mqtt_data22)
+    mqtt_data_3 = float(mqtt_data33)
 
     timestamp = int(time.time())  # Obtém o timestamp atual
     year = int(time.strftime("%Y", time.localtime(timestamp)))  # Extrai o ano
