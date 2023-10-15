@@ -1,6 +1,8 @@
 from flask import Flask, render_template
 import paho.mqtt.client as mqtt
+import sqlite3
 import time
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -9,21 +11,73 @@ MQTT_BROKER_HOST = "broker.hivemq.com"
 MQTT_BROKER_PORT = 1883
 MQTT_TOPIC = "MQTTINCBTempUmidDiogo"
 
-# Dicionários para armazenar os valores MQTT por ano, mês, dia e hora
 mqtt_values_daily = {}
 
-# Função para conectar-se ao servidor MQTT
+# Configuração do banco de dados SQLite
+DB_NAME = "mqtt_data.db"
+
+def create_table():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT,
+            payload TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def insert_message(topic, payload):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO messages (topic, payload) VALUES (?, ?)
+    ''', (topic, payload))
+    conn.commit()
+    conn.close()
+
+def get_messages():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 1')
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
 def on_connect(client, userdata, flags, rc):
-    print("Conectado ao servidor MQTT com código de resultado " + str(rc))
+
     client.subscribe(MQTT_TOPIC)
 
-# Função para receber mensagens MQTT e armazenar os valores
+def on_message(client, userdata, msg):
+    payload = msg.payload.decode()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  
+    
+    # Inserir a mensagem no banco de dados
+    insert_message(MQTT_TOPIC, payload)
+
+# Configurar o cliente MQTT
+mqtt_client = mqtt.Client()
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
+
+# Criar a tabela no banco de dados (se ainda não existir)
+create_table()
+
+# Iniciar a thread do cliente MQTT
+mqtt_client.loop_start()
+
 def on_message(client, userdata, msg):
     global mqtt_values_daily
-    mqtt_data = msg.payload.decode()
-    mqtt_data_1 = mqtt_data[13:-49]
-    mqtt_data_2 = mqtt_data[34:-28]
-    mqtt_data_3 = mqtt_data[59:-4]
+    mqtt_data = get_messages()
+
+    mqtt_data_1 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else None
+    mqtt_data_2 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else None
+    mqtt_data_3 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else None
 
     timestamp = int(time.time())  # Obtém o timestamp atual
     year = int(time.strftime("%Y", time.localtime(timestamp)))  # Extrai o ano
