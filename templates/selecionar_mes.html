@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Média por Dia - Gráfico</title>
+    <style>
+        body {
+            text-align: center; /* Center-align the content within the body */
+        }
+        h1 {
+            text-align: center; /* Center-align the h1 element */
+        }
+        table {
+            margin: 0 auto; /* Center-align the table */
+            border-collapse: separate;
+            border-spacing: 15px; /* Aumenta a distância entre as colunas */
+        }
+        canvas {
+            display: block;
+            margin: 20px auto; /* Center-align the chart */
+            max-width: 80%; /* Reduce the chart's width */
+            max-height: 550px; /* Set a maximum height for the chart */
+        }
+    </style>
+</head>
+<body>
+    <h1>Dados em cada dia</h1>
+    
+    <h2>Mês {{ selected_month }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Dia</th>
+                {% for day, _ in medias_por_dia.items() %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Temperatura</td>
+                {% for _, media in medias_por_dia.items() %}
+                    <td>{{ media.temp|round(1) }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Umidade do Ar</td>
+                {% for _, media in medias_por_dia.items() %}
+                    <td>{{ media.umid|round(1) }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Umidade do Solo</td>
+                {% for _, media in medias_por_dia.items() %}
+                    <td>{{ media.solo|round(1) }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Gráfico</h2> <!-- Title for the chart -->
+    <canvas id="myChart"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Get the data from the table and convert it to an array
+        const days = Array.from(document.querySelectorAll("table thead tr th")).slice(1).map(cell => cell.textContent);
+        const temperatureData = Array.from(document.querySelectorAll("table tbody tr:nth-child(1) td")).slice(1).map(cell => parseFloat(cell.textContent));
+        const airHumidityData = Array.from(document.querySelectorAll("table tbody tr:nth-child(2) td")).slice(1).map(cell => parseFloat(cell.textContent));
+        const soilHumidityData = Array.from(document.querySelectorAll("table tbody tr:nth-child(3) td")).slice(1).map(cell => parseFloat(cell.textContent));
+
+        // Create a chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Temperatura',
+                    data: temperatureData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }, {
+                    label: 'Umidade do Ar',
+                    data: airHumidityData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }, {
+                    label: 'Umidade do Solo',
+                    data: soilHumidityData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

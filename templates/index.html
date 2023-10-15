@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafico</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Mudança para começar a partir do topo */
+            height: 100vh;
+            margin: 0;
+        }
+    
+        label {
+            margin-bottom: 30px;
+        }
+    
+        select {
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+    
+        canvas {
+            display: block;
+            margin: 20px 0;
+            width: 90%;
+            max-width: 970px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    
+        /* Estilo para a opção de intervalo */
+        #dateRange {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            margin-top: 10px; /* Ajuste para mover o bloco para baixo */
+        }
+    </style>
+</head>
+<body>
+
+    <label for="dateRange"></label>
+    <select id="dateRange">
+        <option value="1">Último dia</option>
+        <option value="7">Última semana</option>
+        <option value="30">Último mês</option>
+        <option value="365">Último ano</option>
+    </select>
+    
+    <canvas id="myChart" width="800" height="400"></canvas>
+
+    <script>
+        var selectedRange = document.getElementById('dateRange').value;
+
+        var dailyData = {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Temperatura',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                },
+                {
+                    label: 'Umidade',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                },
+                {
+                    label: 'Umidade do Solo',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                }
+            ]
+        };
+
+        var monthlyData = {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Temperatura',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                },
+                {
+                    label: 'Umidade',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                },
+                {
+                    label: 'Umidade do Solo',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    data: []
+                }
+            ]
+        };
+
+        var dailyAggregatedData = {};
+
+        function getYear() {
+        var currentDate = new Date();
+        return currentDate.getFullYear();
+}
+
+        {% for datetime, media in medias_por_hora.items() %}
+            var date = new Date('{{ datetime }}');
+            var rangeDate = new Date();
+            rangeDate.setDate(rangeDate.getDate() - selectedRange);
+
+            if (date >= rangeDate && date <= new Date()) {
+                var dateString;
+
+                if (selectedRange == 1) {
+                    dateString = date.getHours().toString().padStart(2, '0') + ':00';
+                } else {
+                    dateString = date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
+
+                }
+
+                if (!dailyAggregatedData[dateString]) {
+                    dailyAggregatedData[dateString] = {
+                        temp: [],
+                        umid: [],
+                        solo: []
+                    };
+                }
+
+                dailyAggregatedData[dateString].temp.push({{ media['temp'] }});
+                dailyAggregatedData[dateString].umid.push({{ media['umid'] }});
+                dailyAggregatedData[dateString].solo.push({{ media['solo'] }});
+
+                if (selectedRange == 1) {
+                    dailyData.labels.push(dateString);
+                    dailyData.datasets[0].data.push({{ media['temp'] }});
+                    dailyData.datasets[1].data.push({{ media['umid'] }});
+                    dailyData.datasets[2].data.push({{ media['solo'] }});
+                }
+            }
+        {% endfor %}
+
+        if (selectedRange != 1) {
+            for (var date in dailyAggregatedData) {
+                if (dailyAggregatedData.hasOwnProperty(date)) {
+                    var avgTemp = dailyAggregatedData[date].temp.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].temp.length;
+                    var avgUmid = dailyAggregatedData[date].umid.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].umid.length;
+                    var avgSolo = dailyAggregatedData[date].solo.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].solo.length;
+
+                    dailyData.labels.push(date);
+                    dailyData.datasets[0].data.push(avgTemp);
+                    dailyData.datasets[1].data.push(avgUmid);
+                    dailyData.datasets[2].data.push(avgSolo);
+                }
+            }
+        }
+
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: dailyData,
+            options: {
+                scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo X
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo Y
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+        var monthlyAggregatedData = {};
+
+        if (selectedRange == 365) {
+            for (var date in dailyAggregatedData) {
+                if (dailyAggregatedData.hasOwnProperty(date)) {
+                    var monthYear = date.split('/');
+                    var monthYearString = monthYear[1] + '/' + getYear();
+
+                    if (!monthlyAggregatedData[monthYearString]) {
+                        monthlyAggregatedData[monthYearString] = {
+                            temp: [],
+                            umid: [],
+                            solo: []
+                        };
+                    }
+
+                    monthlyAggregatedData[monthYearString].temp.push(dailyAggregatedData[date].temp.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].temp.length);
+                    monthlyAggregatedData[monthYearString].umid.push(dailyAggregatedData[date].umid.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].umid.length);
+                    monthlyAggregatedData[monthYearString].solo.push(dailyAggregatedData[date].solo.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].solo.length);
+                }
+            }
+
+            for (var monthYear in monthlyAggregatedData) {
+                if (monthlyAggregatedData.hasOwnProperty(monthYear)) {
+                    var avgTempMonthly = monthlyAggregatedData[monthYear].temp.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].temp.length;
+                    var avgUmidMonthly = monthlyAggregatedData[monthYear].umid.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].umid.length;
+                    var avgSoloMonthly = monthlyAggregatedData[monthYear].solo.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].solo.length;
+
+                    monthlyData.labels.push(monthYear);
+                    monthlyData.datasets[0].data.push(avgTempMonthly);
+                    monthlyData.datasets[1].data.push(avgUmidMonthly);
+                    monthlyData.datasets[2].data.push(avgSoloMonthly);
+                }
+            }
+
+            // Esconder o gráfico diário
+            myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: monthlyData,
+                options: {
+                    scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo X
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo Y
+                        }
+                    }
+                }
+            }
+        }
+    });
+        }
+
+        document.getElementById('dateRange').addEventListener('change', function() {
+            selectedRange = this.value;
+            updateChart();
+        });
+
+        function updateChart() {
+            dailyData.labels = [];
+            dailyData.datasets[0].data = [];
+            dailyData.datasets[1].data = [];
+            dailyData.datasets[2].data = [];
+            dailyAggregatedData = {};
+
+            {% for datetime, media in medias_por_hora.items() %}
+                var date = new Date('{{ datetime }}');
+                var rangeDate = new Date();
+                rangeDate.setDate(rangeDate.getDate() - selectedRange);
+
+                if (date >= rangeDate && date <= new Date()) {
+                    var dateString;
+
+                    if (selectedRange == 1) {
+                        dateString = date.getHours().toString().padStart(2, '0') + ':00';
+                    } else {
+                        dateString = date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
+                    }
+
+                    if (!dailyAggregatedData[dateString]) {
+                        dailyAggregatedData[dateString] = {
+                            temp: [],
+                            umid: [],
+                            solo: []
+                        };
+                    }
+
+                    dailyAggregatedData[dateString].temp.push({{ media['temp'] }});
+                    dailyAggregatedData[dateString].umid.push({{ media['umid'] }});
+                    dailyAggregatedData[dateString].solo.push({{ media['solo'] }});
+
+                    if (selectedRange == 1) {
+                        dailyData.labels.push(dateString);
+                        dailyData.datasets[0].data.push({{ media['temp'] }});
+                        dailyData.datasets[1].data.push({{ media['umid'] }});
+                        dailyData.datasets[2].data.push({{ media['solo'] }});
+                    }
+                }
+            {% endfor %}
+
+            if (selectedRange != 1) {
+                for (var date in dailyAggregatedData) {
+                    if (dailyAggregatedData.hasOwnProperty(date)) {
+                        var avgTemp = dailyAggregatedData[date].temp.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].temp.length;
+                        var avgUmid = dailyAggregatedData[date].umid.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].umid.length;
+                        var avgSolo = dailyAggregatedData[date].solo.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].solo.length;
+
+                        dailyData.labels.push(date);
+                        dailyData.datasets[0].data.push(avgTemp);
+                        dailyData.datasets[1].data.push(avgUmid);
+                        dailyData.datasets[2].data.push(avgSolo);
+                    }
+                }
+            }
+
+            // Se a opção for "Último ano", mostrar o gráfico mensal
+            if (selectedRange == 365) {
+                // Limpar e recalcular o gráfico mensal
+                monthlyData.labels = [];
+                monthlyData.datasets[0].data = [];
+                monthlyData.datasets[1].data = [];
+                monthlyData.datasets[2].data = [];
+                monthlyAggregatedData = {};
+
+                for (var date in dailyAggregatedData) {
+                    if (dailyAggregatedData.hasOwnProperty(date)) {
+                        var monthYear = date.split('/');
+                        var monthYearString = monthYear[1] + '/' + getYear();
+
+                        if (!monthlyAggregatedData[monthYearString]) {
+                            monthlyAggregatedData[monthYearString] = {
+                                temp: [],
+                                umid: [],
+                                solo: []
+                            };
+                        }
+
+                        monthlyAggregatedData[monthYearString].temp.push(dailyAggregatedData[date].temp.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].temp.length);
+                        monthlyAggregatedData[monthYearString].umid.push(dailyAggregatedData[date].umid.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].umid.length);
+                        monthlyAggregatedData[monthYearString].solo.push(dailyAggregatedData[date].solo.reduce((a, b) => a + b, 0) / dailyAggregatedData[date].solo.length);
+                    }
+                }
+
+                for (var monthYear in monthlyAggregatedData) {
+                    if (monthlyAggregatedData.hasOwnProperty(monthYear)) {
+                        var avgTempMonthly = monthlyAggregatedData[monthYear].temp.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].temp.length;
+                        var avgUmidMonthly = monthlyAggregatedData[monthYear].umid.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].umid.length;
+                        var avgSoloMonthly = monthlyAggregatedData[monthYear].solo.reduce((a, b) => a + b, 0) / monthlyAggregatedData[monthYear].solo.length;
+
+                        monthlyData.labels.push(monthYear);
+                        monthlyData.datasets[0].data.push(avgTempMonthly);
+                        monthlyData.datasets[1].data.push(avgUmidMonthly);
+                        monthlyData.datasets[2].data.push(avgSoloMonthly);
+                    }
+                }
+
+                // Destruir o gráfico diário e criar o gráfico mensal
+                myChart.destroy();
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: monthlyData,
+                    options: {
+                        scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo X
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo Y
+                        }
+                    }
+                }
+            }
+        }
+    });
+            } else {
+                // Se não for "Último ano", mostrar o gráfico diário
+                myChart.destroy();
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: dailyData,
+                    options: {
+                        scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo X
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 10 // Ajuste o tamanho da fonte do eixo Y
+                        }
+                    }
+                }
+            }
+        }
+    });
+            }
+        }
+    </script>
+</body>
+</html>

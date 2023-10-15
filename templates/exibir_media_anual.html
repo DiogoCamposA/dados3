@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Médias Anuais</title>
+</head>
+<body>
+    <h1>Médias Anuais para o Ano {{ current_year }}</h1>
+    
+    <table border="1">
+        <tr>
+            <th>Data</th>
+            <th>Média de Temperatura</th>
+            <th>Média de Umidade</th>
+            <th>Média de Solo</th>
+        </tr>
+        
+        {% for (month, day), medias in medias_por_dia.items() %}
+        <tr>
+            <td>{{ month }}/{{ day }}</td>
+            <td>{{ medias["temp"] }}</td>
+            <td>{{ medias["umid"] }}</td>
+            <td>{{ medias["solo"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

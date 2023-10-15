@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecionar Dia</title>
+</head>
+<body>
+    <h1>Médias por Dia</h1>
+
+    <p>Mês Selecionado: {{ selected_month }}</p>
+
+    {% for day, hours_data in medias_por_dia.items() %}
+        <h2>Dia {{ day }}</h2>
+        <table border="1">
+            <tr>
+                <th>Hora</th>
+                <th>Temperatura</th>
+                <th>Umidade</th>
+                <th>Solo</th>
+            </tr>
+            {% for hour, metrics in hours_data.items() %}
+                <tr>
+                    <td>{{ hour }}</td>
+                    <td>{{ metrics["temp"] }}</td>
+                    <td>{{ metrics["umid"] }}</td>
+                    <td>{{ metrics["solo"] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+</body>
+</html>
