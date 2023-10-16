@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 import sqlite3
 import time
 from datetime import datetime
-import pytz
+
 
 app = Flask(__name__)
 
@@ -48,36 +48,47 @@ def get_messages():
     conn.close()
     return result
 
-# Função para converter um timestamp para o fuso horário brasileiro
-def convert_to_brt(timestamp):
-    utc_time = datetime.utcfromtimestamp(timestamp)
-    utc_time = pytz.utc.localize(utc_time)
-    brt_time = utc_time.astimezone(pytz.timezone('America/Sao_Paulo'))
-    return brt_time.timestamp()
-
 def on_connect(client, userdata, flags, rc):
+
     client.subscribe(MQTT_TOPIC)
+
+def on_message(client, userdata, msg):
+    payload = msg.payload.decode()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  
+    
+    # Inserir a mensagem no banco de dados
+    insert_message(MQTT_TOPIC, payload)
+
+# Configurar o cliente MQTT
+mqtt_client = mqtt.Client()
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
+
+# Criar a tabela no banco de dados (se ainda não existir)
+create_table()
+
+# Iniciar a thread do cliente MQTT
+mqtt_client.loop_start()
 
 def on_message(client, userdata, msg):
     global mqtt_values_daily
     mqtt_data = get_messages()
 
-    mqtt_data11 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else 2
-    mqtt_data22 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else 2
-    mqtt_data33 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else 2
+    mqtt_data11 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else 0
+    mqtt_data22 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else 0
+    mqtt_data33 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else 0
 
     mqtt_data_1 = float(mqtt_data11)
     mqtt_data_2 = float(mqtt_data22)
     mqtt_data_3 = float(mqtt_data33)
 
     timestamp = int(time.time())  # Obtém o timestamp atual
-    timestamp_brt = convert_to_brt(timestamp)  # Converte para o fuso horário brasileiro
-
-    year = datetime.fromtimestamp(timestamp_brt).year  # Extrai o ano
-
-    month = int(time.strftime("%m", time.localtime(timestamp_brt)))  # Extrai o mês
-    day = int(time.strftime("%d", time.localtime(timestamp_brt)))  # Extrai o dia
-    hour = int(time.strftime("%H", time.localtime(timestamp_brt)))  # Extrai a hora
+    year = int(time.strftime("%Y", time.localtime(timestamp)))  # Extrai o ano
+    month = int(time.strftime("%m", time.localtime(timestamp)))  # Extrai o mês
+    day = int(time.strftime("%d", time.localtime(timestamp)))  # Extrai o dia
+    hour = int(time.strftime("%H", time.localtime(timestamp)))  # Extrai a hora
 
     if year not in mqtt_values_daily:
         mqtt_values_daily[year] = {}
@@ -94,66 +105,34 @@ def on_message(client, userdata, msg):
         'solo': float(mqtt_data_3),
     })
 
+
 # Configuração do cliente MQTT
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
 
-# Criar a tabela no banco de dados (se ainda não existir)
-create_table()
-
-# Iniciar a thread do cliente MQTT
+# Inicialização do cliente MQTT em uma thread separada
 mqtt_client.loop_start()
 
-def calcular_media(year, month, day, hour):
-    global mqtt_values_daily
-
-    if year in mqtt_values_daily and \
-            month in mqtt_values_daily[year] and \
-            day in mqtt_values_daily[year][month] and \
-            hour in mqtt_values_daily[year][month][day] and \
-            len(mqtt_values_daily[year][month][day][hour]) > 0:
-
-        temp_values = [entry['temp'] for entry in mqtt_values_daily[year][month][day][hour]]
-        umid_values = [entry['umid'] for entry in mqtt_values_daily[year][month][day][hour]]
-        solo_values = [entry['solo'] for entry in mqtt_values_daily[year][month][day][hour]]
-
-        temp_media = sum(temp_values) / len(temp_values)
-        umid_media = sum(umid_values) / len(umid_values)
-        solo_media = sum(solo_values) / len(solo_values)
-
-        return {
-            'temp': temp_media,
-            'umid': umid_media,
-            'solo': solo_media,
-        }
-    else:
-        return {
-            'temp': 0.0,
-            'umid': 0.0,
-            'solo': 0.0,
-        }
+def get_values_last_31_days():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM messages 
+        WHERE timestamp >= datetime('now', '-31 days') 
+        ORDER BY timestamp
+    ''')
+    result = cursor.fetchall()
+    conn.close()
+    return result
 
 @app.route("/")
 def index():
-    current_year = int(time.strftime("%Y", time.localtime(time.time())))
-    current_month = int(time.strftime("%m", time.localtime(time.time())))
-    current_day = int(time.strftime("%d", time.localtime(time.time())))
-    current_hour = int(time.strftime("%H", time.localtime(time.time())))
+    values_last_31_days = get_values_last_31_days()
+    
+    return render_template("index.html", values_last_31_days=values_last_31_days)
 
-    medias_por_hora = {}
-    medias_por_hora1 = {}
-
-    for year in range(current_year, current_year - 1, -1):
-        for month in range(1, 13):
-            for day in range(1, 32):
-                for hour in range(24):
-                    medias_por_hora1[f"{year}-{month:02d}-{day:02d} {hour:02d}:00"] = calcular_media(year, month, day, hour)
-                    medias_por_hora = medias_por_hora1
-
-    return render_template("index.html", medias_por_hora=medias_por_hora)
 
 if __name__ == "__main__":
     app.run(debug=True)
-
