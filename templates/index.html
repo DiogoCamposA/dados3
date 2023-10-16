@@ -2,48 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Averages for Last Day</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th, td {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+    <title>Últimos 31 Dias</title>
 </head>
 <body>
-    <h1>Averages for Last Day</h1>
-    <table>
-        <tr>
-            <th>Timestamp</th>
-            <th>Temperature</th>
-            <th>Humidity</th>
-            <th>Soil Moisture</th>
-        </tr>
-        {% for timestamp, averages in medias_por_hora.items() %}
-            <tr>
-                <td>{{ timestamp }}</td>
-                <td>{{ averages.temp }}</td>
-                <td>{{ averages.umid }}</td>
-                <td>{{ averages.solo }}</td>
-            </tr>
-        {% endfor %}
-    </table>
+
+<h1>Dados dos Últimos 31 Dias</h1>
+
+<table border="1">
+    <tr>
+        <th>Timestamp</th>
+        <th>Topic</th>
+        <th>Payload</th>
+    </tr>
+    {% for value in values_last_31_days %}
+    <tr>
+        <td>{{ value[3] }}</td>
+        <td>{{ value[1] }}</td>
+        <td>{{ value[2] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 </body>
 </html>
-
