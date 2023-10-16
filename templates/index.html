@@ -10,22 +10,26 @@
 
 <h1>Dados dos Últimos 31 Dias</h1>
 
-<table border="1">
+<table border="1" id="dataTable">
     <tr>
         <th>Timestamp</th>
-        <th>Topic</th>
         <th>Valor 1</th>
         <th>Valor 2</th>
         <th>Valor 3</th>
     </tr>
     {% for value in values_last_31_days %}
     <tr>
-        <td>{{ value[3] }}</td>
-        <td>{{ value[1] }}</td>
-        <td>{{ value[2][13:-49] }}</td>  {# Seleciona os primeiros três caracteres #}
-        <td>{{ value[2][34:-28] }}</td> {# Seleciona os próximos três caracteres #}
-        <td>{{ value[2][59:-4] }}</td> {# Seleciona os últimos três caracteres #}
+        <td id="timestamp{{ loop.index }}"></td>
+        <td>{{ value[2][13:-49] }}</td>
+        <td>{{ value[2][34:-28] }}</td>
+        <td>{{ value[2][59:-4] }}</td>
     </tr>
+    <script>
+        var timestamp = new Date('{{ value[3] }}');
+        // Ajuste para o fuso horário desejado (por exemplo, UTC-3)
+        timestamp.setHours(timestamp.getHours() - 3);
+        document.getElementById('timestamp{{ loop.index }}').textContent = timestamp.toLocaleString();
+    </script>
     {% endfor %}
 </table>
 
