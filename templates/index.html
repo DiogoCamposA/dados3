@@ -4,33 +4,31 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valores IoT</title>
+    <title>Últimos 31 Dias</title>
 </head>
 <body>
 
-<h1>Valores IoT por Hora</h1>
+<h1>Dados dos Últimos 31 Dias</h1>
 
-{% for hora, valores in valores_por_hora.items() %}
-    <h2>{{ hora }}</h2>
-    {% if valores['valores'] %}
-        <table border="1">
-            <tr>
-                <th>Temp</th>
-                <th>Umid</th>
-                <th>Solo</th>
-            </tr>
-            {% for valor in valores['valores'] %}
-                <tr>
-                    <td>{{ valor['temp'] }}</td>
-                    <td>{{ valor['umid'] }}</td>
-                    <td>{{ valor['solo'] }}</td>
-                </tr>
-            {% endfor %}
-        </table>
-    {% else %}
-        <p>Sem dados para esta hora.</p>
-    {% endif %}
-{% endfor %}
+<table border="1">
+    <tr>
+        <th>Timestamp</th>
+        <th>Topic</th>
+        <th>Valor 1</th>
+        <th>Valor 2</th>
+        <th>Valor 3</th>
+    </tr>
+    {% for value in values_last_31_days %}
+    <tr>
+        <td>{{ value[3] }}</td>
+        <td>{{ value[1] }}</td>
+        <td>{{ value[2][13:-49] }}</td>  {# Seleciona os primeiros três caracteres #}
+        <td>{{ value[2][34:-28] }}</td> {# Seleciona os próximos três caracteres #}
+        <td>{{ value[2][59:-4] }}</td> {# Seleciona os últimos três caracteres #}
+    </tr>
+    {% endfor %}
+</table>
 
 </body>
 </html>
+
