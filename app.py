@@ -115,24 +115,43 @@ mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
 # Inicialização do cliente MQTT em uma thread separada
 mqtt_client.loop_start()
 
-def get_values_last_31_days():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT * FROM messages 
-        WHERE timestamp >= datetime('now', '-31 days') 
-        ORDER BY timestamp
-    ''')
-    result = cursor.fetchall()
-    conn.close()
-    return result
+def obter_valores_completos(year, month, day, hour):
+    global mqtt_values_daily
+
+    if year in mqtt_values_daily and \
+            month in mqtt_values_daily[year] and \
+            day in mqtt_values_daily[year][month] and \
+            hour in mqtt_values_daily[year][month][day] and \
+            len(mqtt_values_daily[year][month][day][hour]) > 0:
+
+        valores = mqtt_values_daily[year][month][day][hour]
+
+        return {
+            'valores': valores,
+        }
+    else:
+        return {
+            'valores': [],
+        }
 
 @app.route("/")
 def index():
-    values_last_31_days = get_values_last_31_days()
-    
-    return render_template("index.html", values_last_31_days=values_last_31_days)
+    current_year = int(time.strftime("%Y", time.localtime(time.time())))
+    current_month = int(time.strftime("%m", time.localtime(time.time())))
+    current_day = int(time.strftime("%d", time.localtime(time.time())))
+    current_hour = int(time.strftime("%H", time.localtime(time.time())))
 
+    valores_por_hora = {}
+    valores_por_hora1 = {}
+
+    for year in range(current_year, current_year - 1, -1):
+        for month in range(1, 13):
+            for day in range(1, 32):
+                for hour in range(24):
+                    valores_por_hora1[f"{year}-{month:02d}-{day:02d} {hour:02d}:00"] = obter_valores_completos(year, month, day, hour)
+                    valores_por_hora = valores_por_hora1
+
+    return render_template("index.html", valores_por_hora=valores_por_hora)
 
 if __name__ == "__main__":
     app.run(debug=True)
