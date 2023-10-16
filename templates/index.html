@@ -4,34 +4,91 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Últimos 31 Dias</title>
+    <title>Gráfico Últimos 31 Dias</title>
+    <!-- Inclua o Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>Dados dos Últimos 31 Dias</h1>
+<h1>Gráfico dos Últimos 31 Dias</h1>
 
-<table border="1" id="dataTable">
-    <tr>
-        <th>Timestamp</th>
-        <th>Valor 1</th>
-        <th>Valor 2</th>
-        <th>Valor 3</th>
-    </tr>
+<!-- Adicione um canvas para o gráfico -->
+<canvas id="myChart" width="800" height="400"></canvas>
+
+<script>
+    // Agrupar valores por minuto e calcular a média
+    var groupedData = {};
     {% for value in values_last_31_days %}
-    <tr>
-        <td id="timestamp{{ loop.index }}"></td>
-        <td>{{ value[2][13:-49] }}</td>
-        <td>{{ value[2][34:-28] }}</td>
-        <td>{{ value[2][59:-4] }}</td>
-    </tr>
-    <script>
         var timestamp = new Date('{{ value[3] }}');
-        // Ajuste para o fuso horário desejado (por exemplo, UTC-3)
         timestamp.setHours(timestamp.getHours() - 3);
-        document.getElementById('timestamp{{ loop.index }}').textContent = timestamp.toLocaleString();
-    </script>
+
+        var minuteKey = timestamp.toISOString().slice(0, 16);
+        if (!groupedData[minuteKey]) {
+            groupedData[minuteKey] = { count: 0, value1: 0, value2: 0, value3: 0 };
+        }
+
+        groupedData[minuteKey].count++;
+        groupedData[minuteKey].value1 += parseFloat('{{ value[2][13:-49] }}');
+        groupedData[minuteKey].value2 += parseFloat('{{ value[2][34:-28] }}');
+        groupedData[minuteKey].value3 += parseFloat('{{ value[2][59:-4] }}');
     {% endfor %}
-</table>
+
+    // Preparar dados para o gráfico
+    var labels = Object.keys(groupedData);
+    var dataValue1 = labels.map(function (key) {
+        return (groupedData[key].value1 / groupedData[key].count).toFixed(2);
+    });
+    var dataValue2 = labels.map(function (key) {
+        return (groupedData[key].value2 / groupedData[key].count).toFixed(2);
+    });
+    var dataValue3 = labels.map(function (key) {
+        return (groupedData[key].value3 / groupedData[key].count).toFixed(2);
+    });
+
+    // Criar um gráfico
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Valor 1',
+                data: dataValue1,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+                fill: false
+            }, {
+                label: 'Valor 2',
+                data: dataValue2,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                fill: false
+            }, {
+                label: 'Valor 3',
+                data: dataValue3,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                fill: false
+            }]
+        },
+        options: {
+            scales: {
+                x: [{
+                    type: 'linear',
+                    position: 'bottom',
+                    ticks: {
+                        stepSize: 1
+                    }
+                }],
+                y: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+</script>
 
 </body>
 </html>
