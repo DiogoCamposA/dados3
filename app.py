@@ -72,40 +72,6 @@ create_table()
 # Iniciar a thread do cliente MQTT
 mqtt_client.loop_start()
 
-def on_message(client, userdata, msg):
-    global mqtt_values_daily
-    mqtt_data = get_messages()
-
-    mqtt_data11 = mqtt_data[2][13:-49] if mqtt_data and len(mqtt_data) > 2 else 0
-    mqtt_data22 = mqtt_data[2][34:-28] if mqtt_data and len(mqtt_data) > 2 else 0
-    mqtt_data33 = mqtt_data[2][59:-4] if mqtt_data and len(mqtt_data) > 2 else 0
-
-    mqtt_data_1 = float(mqtt_data11)
-    mqtt_data_2 = float(mqtt_data22)
-    mqtt_data_3 = float(mqtt_data33)
-
-    timestamp = int(time.time())  # Obtém o timestamp atual
-    year = int(time.strftime("%Y", time.localtime(timestamp)))  # Extrai o ano
-    month = int(time.strftime("%m", time.localtime(timestamp)))  # Extrai o mês
-    day = int(time.strftime("%d", time.localtime(timestamp)))  # Extrai o dia
-    hour = int(time.strftime("%H", time.localtime(timestamp)))  # Extrai a hora
-
-    if year not in mqtt_values_daily:
-        mqtt_values_daily[year] = {}
-    if month not in mqtt_values_daily[year]:
-        mqtt_values_daily[year][month] = {}
-    if day not in mqtt_values_daily[year][month]:
-        mqtt_values_daily[year][month][day] = {}
-    if hour not in mqtt_values_daily[year][month][day]:
-        mqtt_values_daily[year][month][day][hour] = []
-
-    mqtt_values_daily[year][month][day][hour].append({
-        'temp': float(mqtt_data_1),
-        'umid': float(mqtt_data_2),
-        'solo': float(mqtt_data_3),
-    })
-
-
 # Configuração do cliente MQTT
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
@@ -119,8 +85,7 @@ def get_values_last_31_days():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT * FROM messages 
-        WHERE timestamp >= datetime('now', '-31 days') 
+        SELECT * FROM messages  
         ORDER BY timestamp
     ''')
     result = cursor.fetchall()
