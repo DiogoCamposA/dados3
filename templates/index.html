@@ -4,25 +4,24 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico Últimos 31 Dias</title>
+    <title>Gráfico</title>
     <!-- Inclua o Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>Gráfico dos Últimos 31 Dias</h1>
-
 <!-- Adicione um canvas para o gráfico -->
-<canvas id="myChart" width="800" height="400"></canvas>
+<canvas id="myChart" width="700" height="330"></canvas>
 
 <script>
     // Agrupar valores por minuto e calcular a média
     var groupedData = {};
     {% for value in values_last_31_days %}
         var timestamp = new Date('{{ value[3] }}');
-        timestamp.setHours(timestamp.getHours() - 3);
+        timestamp.setHours(timestamp.getHours() -3);
 
-        var minuteKey = timestamp.toISOString().slice(0, 16);
+        var minuteKey = timestamp.toLocaleString('pt-br', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+
         if (!groupedData[minuteKey]) {
             groupedData[minuteKey] = { count: 0, value1: 0, value2: 0, value3: 0 };
         }
