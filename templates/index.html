@@ -35,14 +35,50 @@
 
     // Preparar dados para o gráfico
     var labels = Object.keys(groupedData);
+
     var dataValue1 = labels.map(function (key) {
-        return (groupedData[key].value1 / groupedData[key].count).toFixed(2);
+        var sum = groupedData[key].value1;
+        var count = groupedData[key].count;
+        if (count > 0) {
+            var average = sum / count;
+            // Se a média estiver fora do intervalo desejado, defina como NaN
+            if (average < -50 || average > 150) {
+                return NaN;
+            }
+            return average.toFixed(2);
+        } else {
+            return NaN;
+        }
     });
+
     var dataValue2 = labels.map(function (key) {
-        return (groupedData[key].value2 / groupedData[key].count).toFixed(2);
+        var sum = groupedData[key].value2;
+        var count = groupedData[key].count;
+        if (count > 0) {
+            var average = sum / count;
+            // Se a média estiver fora do intervalo desejado, defina como NaN
+            if (average < -50 || average > 150) {
+                return NaN;
+            }
+            return average.toFixed(2);
+        } else {
+            return NaN;
+        }
     });
+
     var dataValue3 = labels.map(function (key) {
-        return (groupedData[key].value3 / groupedData[key].count).toFixed(2);
+        var sum = groupedData[key].value3;
+        var count = groupedData[key].count;
+        if (count > 0) {
+            var average = sum / count;
+            // Se a média estiver fora do intervalo desejado, defina como NaN
+            if (average < -50 || average > 150) {
+                return NaN;
+            }
+            return average.toFixed(2);
+        } else {
+            return NaN;
+        }
     });
 
     // Criar um gráfico
@@ -92,4 +128,3 @@
 
 </body>
 </html>
-
