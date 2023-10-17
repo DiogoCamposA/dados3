@@ -48,19 +48,6 @@ def get_messages():
     conn.close()
     return result
 
-def on_connect(client, userdata, flags, rc):
-
-    client.subscribe(MQTT_TOPIC)
-
-# Configuração do cliente MQTT
-mqtt_client = mqtt.Client()
-mqtt_client.on_connect = on_connect
-mqtt_client.on_message = on_message
-mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
-
-# Inicialização do cliente MQTT em uma thread separada
-mqtt_client.loop_start()
-
 def get_values_last_31_days():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
