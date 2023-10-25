@@ -1,8 +1,9 @@
 from flask import Flask, render_template
 import paho.mqtt.client as mqtt
 import sqlite3
+import time
 from datetime import datetime
-import os
+
 
 app = Flask(__name__)
 
@@ -11,13 +12,13 @@ MQTT_BROKER_HOST = "broker.hivemq.com"
 MQTT_BROKER_PORT = 1883
 MQTT_TOPIC = "MQTTINCBTempUmidDiogo"
 
-# Diretório para armazenar o banco de dados
-DB_DIRECTORY = "data"
+mqtt_values_daily = {}
+
+# Configuração do banco de dados SQLite
 DB_NAME = "mqtt_data.db"
-DB_PATH = os.path.join(DB_DIRECTORY, DB_NAME)
 
 def create_table():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
@@ -30,14 +31,8 @@ def create_table():
     conn.commit()
     conn.close()
 
-# Certifique-se de que o diretório exista
-os.makedirs(DB_DIRECTORY, exist_ok=True)
-
-# Chamar a função de criação da tabela apenas uma vez, ao iniciar a aplicação
-create_table()
-
 def insert_message(topic, payload):
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO messages (topic, payload) VALUES (?, ?)
@@ -46,7 +41,7 @@ def insert_message(topic, payload):
     conn.close()
 
 def get_messages():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 1')
     result = cursor.fetchone()
@@ -54,11 +49,15 @@ def get_messages():
     return result
 
 def on_connect(client, userdata, flags, rc):
+
     client.subscribe(MQTT_TOPIC)
 
 def on_message(client, userdata, msg):
     payload = msg.payload.decode()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  
+    
+    # Inserir a mensagem no banco de dados
     insert_message(MQTT_TOPIC, payload)
 
 # Configurar o cliente MQTT
@@ -67,16 +66,23 @@ mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
 
+# Criar a tabela no banco de dados (se ainda não existir)
+create_table()
+
 # Iniciar a thread do cliente MQTT
 mqtt_client.loop_start()
 
-@app.route("/")
-def index():
-    values_last_31_days = get_values_last_31_days()
-    return render_template("index.html", values_last_31_days=values_last_31_days)
+# Configuração do cliente MQTT
+mqtt_client = mqtt.Client()
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
+
+# Inicialização do cliente MQTT em uma thread separada
+mqtt_client.loop_start()
 
 def get_values_last_31_days():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT * FROM messages  
@@ -85,6 +91,12 @@ def get_values_last_31_days():
     result = cursor.fetchall()
     conn.close()
     return result
+
+@app.route("/")
+def index():
+    values_last_31_days = get_values_last_31_days()
+    
+    return render_template("index.html", values_last_31_days=values_last_31_days)
 
 if __name__ == "__main__":
     app.run(debug=True)
