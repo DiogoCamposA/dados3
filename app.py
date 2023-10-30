@@ -1,9 +1,7 @@
 from flask import Flask, render_template
 import paho.mqtt.client as mqtt
-import sqlite3
-import time
+import psycopg2
 from datetime import datetime
-
 
 app = Flask(__name__)
 
@@ -12,36 +10,56 @@ MQTT_BROKER_HOST = "broker.hivemq.com"
 MQTT_BROKER_PORT = 1883
 MQTT_TOPIC = "MQTTINCBTempUmidDiogo"
 
-mqtt_values_daily = {}
-
-# Configuração do banco de dados SQLite
-DB_NAME = "mqtt_data.db"
+# Configuração do banco de dados PostgreSQL
+POSTGRES_HOST = "database-temp.ct8moxkr9qvc.us-east-1.rds.amazonaws.com"
+POSTGRES_PORT = 5432
+POSTGRES_DB = "temp_dados"
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "123456789"
 
 def create_table():
-    conn = sqlite3.connect(DB_NAME)
+    conn = psycopg2.connect(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB
+    )
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             topic TEXT,
             payload TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
     conn.close()
 
 def insert_message(topic, payload):
-    conn = sqlite3.connect(DB_NAME)
+    conn = psycopg2.connect(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB
+    )
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO messages (topic, payload) VALUES (?, ?)
+        INSERT INTO messages (topic, payload) VALUES (%s, %s)
     ''', (topic, payload))
     conn.commit()
     conn.close()
 
 def get_messages():
-    conn = sqlite3.connect(DB_NAME)
+    conn = psycopg2.connect(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB
+    )
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 1')
     result = cursor.fetchone()
@@ -49,14 +67,11 @@ def get_messages():
     return result
 
 def on_connect(client, userdata, flags, rc):
-
     client.subscribe(MQTT_TOPIC)
 
 def on_message(client, userdata, msg):
     payload = msg.payload.decode()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-  
-    
     # Inserir a mensagem no banco de dados
     insert_message(MQTT_TOPIC, payload)
 
@@ -82,7 +97,13 @@ mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
 mqtt_client.loop_start()
 
 def get_values_last_31_days():
-    conn = sqlite3.connect(DB_NAME)
+    conn = psycopg2.connect(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB
+    )
     cursor = conn.cursor()
     cursor.execute('''
         SELECT * FROM messages  
