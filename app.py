@@ -13,7 +13,6 @@ MQTT_TOPIC = "MQTTINCBTempUmidDiogo"
 # Configuração do banco de dados PostgreSQL
 POSTGRES_HOST = "database-temp.ct8moxkr9qvc.us-east-1.rds.amazonaws.com"
 POSTGRES_PORT = 5432
-POSTGRES_DB = "temp_dados"
 POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "123456789"
 
@@ -23,7 +22,7 @@ def create_table():
         port=POSTGRES_PORT,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB
+    
     )
     cursor = conn.cursor()
     cursor.execute('''
@@ -43,7 +42,7 @@ def insert_message(topic, payload):
         port=POSTGRES_PORT,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB
+ 
     )
     cursor = conn.cursor()
     cursor.execute('''
@@ -58,7 +57,7 @@ def get_messages():
         port=POSTGRES_PORT,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB
+    
     )
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 1')
@@ -102,7 +101,7 @@ def get_values_last_31_days():
         port=POSTGRES_PORT,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB
+        
     )
     cursor = conn.cursor()
     cursor.execute('''
