@@ -4,88 +4,123 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico</title>
-    <!-- Inclua o Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Gráficos Interativos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+    <style>
+        body {font-family: 'Arial', sans-serif; margin: 10px; text-align: center; background-color: #f5f5f5;}
+        h1 {color: #333;}
+        canvas {display: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background-color: #fff;}
+        select {font-size: 15px; padding: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; color: #555; cursor: pointer;}
+        select:hover {border-color: #888;}
+        option {background-color: #fff; color: #333;}
+        option:hover {background-color: #ddd;}
+    </style>
 </head>
 <body>
-
-<!-- Adicione um canvas para o gráfico -->
-<canvas id="myChart" width="700" height="330"></canvas>
-
+<label for="chartSelector">Selecione o Período:</label>
+<select id="chartSelector" onchange="updateChart()">
+    <option value="minute">Por Minuto</option>
+    <option value="hour">Por Hora</option>
+    <option value="day">Por Dia</option>
+</select>
+<canvas id="myChartMinute" style="width: 26%; height: auto;"></canvas>
+<canvas id="myChartHour" style="width: 26%; height: auto;"></canvas>
+<canvas id="myChartDay" style="width: 26%; height: auto;"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    var selectedChart = 'minute'; // Inicialmente, exiba o gráfico por minuto
+
+    function updateChart() {
+        selectedChart = document.getElementById('chartSelector').value;
+
+        // Oculta todos os gráficos
+        document.getElementById('myChartMinute').style.display = 'none';
+        document.getElementById('myChartHour').style.display = 'none';
+        document.getElementById('myChartDay').style.display = 'none';
+
+        // Exibe o gráfico selecionado
+        document.getElementById('myChart' + selectedChart.charAt(0).toUpperCase() + selectedChart.slice(1)).style.display = 'block';
+    }
+
     // Agrupar valores por minuto e calcular a média
     var groupedData = {};
     {% for value in values_last_31_days %}
         var timestamp = new Date('{{ value[3] }}');
-        timestamp.setHours(timestamp.getHours() -3);
+        timestamp.setHours(timestamp.getHours() - 3);
 
         var minuteKey = timestamp.toLocaleString('pt-br', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
 
         if (!groupedData[minuteKey]) {
-            groupedData[minuteKey] = { count: 0, value1: 0, value2: 0, value3: 0 };
+            groupedData[minuteKey] = { count: 0, value1: [], value2: [], value3: [] };
         }
 
         groupedData[minuteKey].count++;
-        groupedData[minuteKey].value1 += parseFloat('{{ value[2][13:-49] }}');
-        groupedData[minuteKey].value2 += parseFloat('{{ value[2][34:-28] }}');
-        groupedData[minuteKey].value3 += parseFloat('{{ value[2][59:-4] }}');
+        groupedData[minuteKey].value1.push(parseFloat('{{ value[2][13:-49] }}'));
+        groupedData[minuteKey].value2.push(parseFloat('{{ value[2][34:-28] }}'));
+        groupedData[minuteKey].value3.push(parseFloat('{{ value[2][59:-4] }}'));
     {% endfor %}
 
-    // Preparar dados para o gráfico
-    var labels = Object.keys(groupedData);
+    // Preparar dados para o gráfico por minuto
+    var labelsMinute0 = Object.keys(groupedData);
+    var labelsMinute= labelsMinute0.slice(-60);
 
-    var dataValue1 = labels.map(function (key) {
-        var sum = groupedData[key].value1;
-        var count = groupedData[key].count;
-        if (count > 0) {
-            var average = sum / count;
-            // Se a média estiver fora do intervalo desejado, defina como NaN
-            if (average < -50 || average > 150) {
-                return NaN;
-            }
+    var dataValue1 = labelsMinute.map(function (key) {
+        var values = groupedData[key].value1.filter(function (value) {
+            return value >= -50 && value <= 150;
+        });
+
+        if (values.length > 0) {
+            var sum = values.reduce(function (acc, val) {
+                return acc + val;
+            }, 0);
+
+            var average = sum / values.length;
             return average.toFixed(2);
         } else {
             return NaN;
         }
     });
 
-    var dataValue2 = labels.map(function (key) {
-        var sum = groupedData[key].value2;
-        var count = groupedData[key].count;
-        if (count > 0) {
-            var average = sum / count;
-            // Se a média estiver fora do intervalo desejado, defina como NaN
-            if (average < -50 || average > 150) {
-                return NaN;
-            }
+    var dataValue2 = labelsMinute.map(function (key) {
+        var values = groupedData[key].value2.filter(function (value) {
+            return value >= -50 && value <= 150;
+        });
+
+        if (values.length > 0) {
+            var sum = values.reduce(function (acc, val) {
+                return acc + val;
+            }, 0);
+
+            var average = sum / values.length;
             return average.toFixed(2);
         } else {
             return NaN;
         }
     });
 
-    var dataValue3 = labels.map(function (key) {
-        var sum = groupedData[key].value3;
-        var count = groupedData[key].count;
-        if (count > 0) {
-            var average = sum / count;
-            // Se a média estiver fora do intervalo desejado, defina como NaN
-            if (average < -50 || average > 150) {
-                return NaN;
-            }
+    var dataValue3 = labelsMinute.map(function (key) {
+        var values = groupedData[key].value3.filter(function (value) {
+            return value >= -50 && value <= 150;
+        });
+
+        if (values.length > 0) {
+            var sum = values.reduce(function (acc, val) {
+                return acc + val;
+            }, 0);
+
+            var average = sum / values.length;
             return average.toFixed(2);
         } else {
             return NaN;
         }
     });
 
-    // Criar um gráfico
-    var ctx = document.getElementById('myChart').getContext('2d');
-    var myChart = new Chart(ctx, {
+    // Criar um gráfico por minuto
+    var ctxMinute = document.getElementById('myChartMinute').getContext('2d');
+    var myChartMinute = new Chart(ctxMinute, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: labelsMinute,
             datasets: [{
                 label: 'Temperatura',
                 data: dataValue1,
@@ -123,6 +158,252 @@
             }
         }
     });
+
+  // Preparar dados para o gráfico por hora
+var groupedDataHour = {};
+for (var key in groupedData) {
+    if (groupedData.hasOwnProperty(key)) {
+        var hourKey = key.split(':')[0] + ':00';
+        if (!groupedDataHour[hourKey]) {
+            groupedDataHour[hourKey] = { count: 0, value1: [], value2: [], value3: [] };
+        }
+        groupedDataHour[hourKey].count += groupedData[key].count;
+        groupedDataHour[hourKey].value1 = groupedDataHour[hourKey].value1.concat(groupedData[key].value1);
+        groupedDataHour[hourKey].value2 = groupedDataHour[hourKey].value2.concat(groupedData[key].value2);
+        groupedDataHour[hourKey].value3 = groupedDataHour[hourKey].value3.concat(groupedData[key].value3);
+    }
+}
+
+var labelsHour = Object.keys(groupedDataHour);
+
+// Ajuste para exibir apenas as últimas 60 médias
+if (labelsHour.length > 48) {
+    labelsHour = labelsHour.slice(labelsHour.length - 48);
+}
+
+var dataValue1Hour = labelsHour.map(function (key) {
+    var values = groupedDataHour[key].value1.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+var dataValue2Hour = labelsHour.map(function (key) {
+    var values = groupedDataHour[key].value2.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+var dataValue3Hour = labelsHour.map(function (key) {
+    var values = groupedDataHour[key].value3.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+// Criar um gráfico por hora
+var ctxHour = document.getElementById('myChartHour').getContext('2d');
+var myChartHour = new Chart(ctxHour, {
+    type: 'line',
+    data: {
+        labels: labelsHour,
+        datasets: [{
+            label: 'Temperatura',
+            data: dataValue1Hour,
+            borderColor: 'rgba(240, 100, 100, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }, {
+            label: 'Umidade do ar',
+            data: dataValue2Hour,
+            borderColor: 'rgba(100, 100, 240, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }, {
+            label: 'Umidade do solo',
+            data: dataValue3Hour,
+            borderColor: 'rgba(100, 240, 100, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }]
+    },
+    options: {
+        scales: {
+            x: [{
+                type: 'linear',
+                position: 'bottom',
+                ticks: {
+                    stepSize: 1
+                }
+            }],
+            y: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+
+// Preparar dados para o gráfico por dia
+var groupedDataDay = {};
+var labelsDay = Object.keys(groupedData);
+
+for (var key in groupedData) {
+    if (groupedData.hasOwnProperty(key)) {
+        var dayKey = key.split(' ')[0];
+        if (!groupedDataDay[dayKey]) {
+            groupedDataDay[dayKey] = { count: 0, value1: [], value2: [], value3: [] };
+        }
+        groupedDataDay[dayKey].count += groupedData[key].count;
+        groupedDataDay[dayKey].value1 = groupedDataDay[dayKey].value1.concat(groupedData[key].value1);
+        groupedDataDay[dayKey].value2 = groupedDataDay[dayKey].value2.concat(groupedData[key].value2);
+        groupedDataDay[dayKey].value3 = groupedDataDay[dayKey].value3.concat(groupedData[key].value3);
+    }
+}
+
+var labelsDay = Object.keys(groupedDataDay);
+
+var dataValue1Day = labelsDay.map(function (key) {
+    var values = groupedDataDay[key].value1.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+var dataValue2Day = labelsDay.map(function (key) {
+    var values = groupedDataDay[key].value2.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+var dataValue3Day = labelsDay.map(function (key) {
+    var values = groupedDataDay[key].value3.filter(function (value) {
+        return value >= -50 && value <= 150;
+    });
+
+    if (values.length > 0) {
+        var sum = values.reduce(function (acc, val) {
+            return acc + val;
+        }, 0);
+
+        var average = sum / values.length;
+        return average.toFixed(2);
+    } else {
+        return NaN;
+    }
+});
+
+// Criar um gráfico por dia
+var ctxDay = document.getElementById('myChartDay').getContext('2d');
+var myChartDay = new Chart(ctxDay, {
+    type: 'line',
+    data: {
+        labels: labelsDay,
+        datasets: [{
+            label: 'Temperatura',
+            data: dataValue1Day,
+            borderColor: 'rgba(240, 100, 100, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }, {
+            label: 'Umidade do ar',
+            data: dataValue2Day,
+            borderColor: 'rgba(100, 100, 240, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }, {
+            label: 'Umidade do solo',
+            data: dataValue3Day,
+            borderColor: 'rgba(100, 240, 100, 1)',
+            borderWidth: 1.5,
+            fill: false
+        }]
+    },
+    options: {
+        scales: {
+            x: [{
+                type: 'linear',
+                position: 'bottom',
+                ticks: {
+                    stepSize: 1
+                }
+            }],
+            y: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+
+function updateChart() {
+    selectedChart = document.getElementById('chartSelector').value;
+
+    // Oculta todos os gráficos
+    document.getElementById('myChartMinute').style.display = 'none';
+    document.getElementById('myChartHour').style.display = 'none';
+    document.getElementById('myChartDay').style.display = 'none';
+
+    // Exibe o gráfico selecionado
+    document.getElementById('myChart' + selectedChart.charAt(0).toUpperCase() + selectedChart.slice(1)).style.display = 'block';
+}
+
+// Chama a função para exibir o gráfico inicialmente
+updateChart();
 </script>
 
 </body>
