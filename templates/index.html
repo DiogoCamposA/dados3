@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráficos Interativos</title>
+    <title>Gráfico</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
     <style>
         body {font-family: 'Arial', sans-serif; margin: 10px; text-align: center; background-color: #f5f5f5;}
@@ -19,9 +19,9 @@
 <body>
 <label for="chartSelector">Selecione o Período:</label>
 <select id="chartSelector" onchange="updateChart()">
-    <option value="minute">Por Minuto</option>
-    <option value="hour">Por Hora</option>
-    <option value="day">Por Dia</option>
+    <option value="minute">Ultima Hora</option>
+    <option value="hour">Ultimo Dia</option>
+    <option value="day">Ultimos Mes</option>
 </select>
 <canvas id="myChartMinute" style="width: 26%; height: auto;"></canvas>
 <canvas id="myChartHour" style="width: 26%; height: auto;"></canvas>
@@ -128,13 +128,13 @@
                 borderWidth: 1.5,
                 fill: false
             }, {
-                label: 'Umidade do ar',
+                label: 'Umidade do Ar',
                 data: dataValue2,
                 borderColor: 'rgba(100, 100, 240, 1)',
                 borderWidth: 1.5,
                 fill: false
             }, {
-                label: 'Umidade do solo',
+                label: 'Umidade do Solo',
                 data: dataValue3,
                 borderColor: 'rgba(100, 240, 100, 1)',
                 borderWidth: 1.5,
