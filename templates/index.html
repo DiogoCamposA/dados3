@@ -177,8 +177,8 @@ for (var key in groupedData) {
 var labelsHour = Object.keys(groupedDataHour);
 
 // Ajuste para exibir apenas as últimas 60 médias
-if (labelsHour.length > 48) {
-    labelsHour = labelsHour.slice(labelsHour.length - 48);
+if (labelsHour.length > 24) {
+    labelsHour = labelsHour.slice(labelsHour.length - 24);
 }
 
 var dataValue1Hour = labelsHour.map(function (key) {
